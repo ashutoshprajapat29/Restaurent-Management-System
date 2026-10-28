@@ -17,8 +17,10 @@ import {
   tableSchema,
   tableUpdateSchema,
   tableLayoutUpdateSchema,
+  transferOrderSchema,
   type SessionUser,
   type TableLayoutUpdateDto,
+  type TransferOrderDto,
 } from '@nodedr-restaurant/types';
 import { z } from 'zod';
 import { Auth } from '../../common/decorators/auth.decorator';
@@ -155,6 +157,18 @@ export class TablesController {
       body.status,
       body.assignedWaiterId,
     );
+  }
+
+  @Auth('tables.view', 'orders.edit')
+  @Post('transfer')
+  @UsePipes(new ZodValidationPipe(transferOrderSchema))
+  async transferOrder(
+    @CurrentUser() user: SessionUser,
+    @Query('branchId') branchId: string,
+    @Body() body: TransferOrderDto,
+  ) {
+    await this.branchAccess.assertAccess(user.restaurantId, branchId);
+    return this.tablesService.transferOrder(branchId, body, user.id);
   }
 
   @Auth('tables.manage')
