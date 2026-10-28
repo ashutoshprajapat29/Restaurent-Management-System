@@ -30,7 +30,8 @@ export function gstSummary(lines: (GstLine & { factor: number })[]): {
   const byRate = new Map<number, { total: number; tax: number }>();
   for (const l of lines) {
     const charged = l.lineTotal * l.factor;
-    const tax = (charged * l.taxRatePercent) / (100 + l.taxRatePercent);
+    const rate = Math.max(0, l.taxRatePercent);
+    const tax = rate > 0 ? (charged * rate) / (100 + rate) : 0;
     const row = byRate.get(l.taxRatePercent) ?? { total: 0, tax: 0 };
     row.total += charged;
     row.tax += tax;

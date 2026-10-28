@@ -29,7 +29,22 @@ export class AccountingService {
     });
   }
 
-  createExpense(branchId: string, userId: string, dto: ExpenseDto) {
+  async createExpense(branchId: string, userId: string, dto: ExpenseDto) {
+    if (dto.paidFromCash) {
+      const closed = await this.prisma.cashClosing.findUnique({
+        where: {
+          branchId_businessDate: {
+            branchId,
+            businessDate: dayStart(dto.spentOn),
+          },
+        },
+      });
+      if (closed) {
+        throw new BadRequestException(
+          'That day is already closed — cannot record cash expenses against a closed till',
+        );
+      }
+    }
     return this.prisma.expense.create({
       data: {
         branchId,
@@ -67,7 +82,7 @@ export class AccountingService {
   async closingPreview(branchId: string, date: string, openingFloat = 0) {
     const from = dayStart(date); // @db.Date column: a plain calendar date
     const range = zonedRange(date, date, await this.time.tzForBranch(branchId));
-    const [sales, refunds, expenses] = await Promise.all([
+    const [sales, refunds, expenses, allPayments] = await Promise.all([
       this.prisma.payment.aggregate({
         where: {
           method: 'CASH',
@@ -88,10 +103,30 @@ export class AccountingService {
         where: { branchId, spentOn: from, paidFromCash: true },
         _sum: { amount: true },
       }),
+      this.prisma.payment.groupBy
+        ? this.prisma.payment.groupBy({
+            by: ['method'],
+            where: {
+              createdAt: range,
+              order: { branchId },
+            },
+            _sum: { amount: true },
+          })
+        : Promise.resolve([]),
     ]);
     const cashSales = Number(sales._sum.amount ?? 0);
     const cashRefunds = Number(refunds._sum.amount ?? 0);
     const cashExpenses = Number(expenses._sum.amount ?? 0);
+
+    const tenderTotals: Record<string, number> = {};
+    for (const p of allPayments) {
+      tenderTotals[p.method] = round2(Number(p._sum?.amount ?? 0));
+    }
+    tenderTotals['CASH'] = round2(cashSales - cashRefunds);
+    const totalSales = round2(
+      Object.values(tenderTotals).reduce((sum, val) => sum + val, 0),
+    );
+
     return {
       businessDate: date,
       openingFloat,
@@ -103,6 +138,8 @@ export class AccountingService {
         cashRefunds,
         cashExpenses,
       ),
+      tenderTotals,
+      totalSales,
     };
   }
 
@@ -229,8 +266,9 @@ export class AccountingService {
     });
     const lines = orders.flatMap((o) => {
       const subtotal = Number(o.subtotal);
-      const charged =
-        subtotal - Number(o.discountAmount) - Number(o.loyaltyDiscountAmount);
+      // Loyalty redemption is a tender method (payment), not a price reduction,
+      // so it does not reduce the taxable base.
+      const charged = subtotal - Number(o.discountAmount);
       const factor = subtotal > 0 ? Math.max(0, charged) / subtotal : 1;
       return o.items.map((i) => ({
         lineTotal: Number(i.lineTotal),
