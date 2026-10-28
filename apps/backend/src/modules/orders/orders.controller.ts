@@ -86,6 +86,8 @@ function toKotOrder(order: ReceiptData): EscposKotOrder {
       ? { label: order.table.name ?? `#${order.table.number}` }
       : null,
     customer: order.customer ? { name: order.customer.name ?? 'Guest' } : null,
+    waiterName: order.createdBy?.name ?? null,
+    waiterId: order.createdBy?.id ?? null,
     items: order.items.map((item) => ({
       nameSnapshot: item.nameSnapshot,
       quantity: item.quantity,
@@ -438,9 +440,11 @@ export class OrdersController {
     if (overrides.isProvisional) {
       await this.ordersService.recordBillPrinted(branchId, id, user.id);
     }
+    const receiptPaperWidth = query.width === '58' ? 58 : 80;
     const html = buildReceiptHtml({
       restaurantName: order.branch.restaurant.name,
       currency: order.branch.restaurant.currency,
+      logoUrl: order.branch.restaurant.logoUrl,
       branch: {
         name: order.branch.name,
         address: order.branch.address,
@@ -457,6 +461,7 @@ export class OrdersController {
           ? null
           : await this.verifactu.qrForOrder(order.id),
       },
+      paperWidthMm: receiptPaperWidth,
     });
     res.type('html').send(html);
   }
@@ -468,12 +473,15 @@ export class OrdersController {
     @Query('branchId') branchId: string,
     @Param('id') id: string,
     @Res() res: Response,
+    @Query('width') width?: string,
   ) {
     await this.branchAccess.assertAccess(user.restaurantId, branchId);
     const order = await this.ordersService.getReceiptData(branchId, id);
+    const paperWidthMm = width === '58' ? 58 : 80;
     const html = buildKotHtml({
       branchName: order.branch.name,
       order: toKotOrder(order),
+      paperWidthMm,
     });
     res.type('html').send(html);
   }

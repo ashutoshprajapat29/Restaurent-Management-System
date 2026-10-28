@@ -74,9 +74,11 @@ export function computeOrderTotals(
   const subtotal = round2(lines.reduce((sum, l) => sum + l.lineTotal, 0));
   const taxAmount = round2(lines.reduce((sum, l) => sum + l.taxAmount, 0));
 
-  const percentDiscount = round2((subtotal * discountPercent) / 100);
+  const validPercent = Math.max(0, Math.min(100, discountPercent));
+  const validFlat = Math.max(0, discountFlat);
+  const percentDiscount = round2((subtotal * validPercent) / 100);
   const discountAmount = round2(
-    Math.min(percentDiscount + discountFlat, subtotal),
+    Math.max(0, Math.min(percentDiscount + validFlat, subtotal)),
   );
 
   const totalAmount = round2(subtotal - discountAmount);

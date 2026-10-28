@@ -113,6 +113,7 @@ export class OrdersService {
       include: {
         table: true,
         customer: true,
+        createdBy: { select: { id: true, name: true } },
         items: { include: { modifiers: true } },
         payments: true,
         branch: { include: { restaurant: true } },
@@ -188,6 +189,13 @@ export class OrdersService {
       throw new BadRequestException(
         'One or more menu items are invalid for this branch',
       );
+    }
+    for (const menuItem of menuItems) {
+      if (!menuItem.isActive) {
+        throw new BadRequestException(
+          `Item "${menuItem.name}" is OUT OF STOCK and cannot be ordered`,
+        );
+      }
     }
     const menuItemById = new Map(menuItems.map((m) => [m.id, m]));
     const taxMode = await this.getBranchTaxMode(branchId);
@@ -470,6 +478,13 @@ export class OrdersService {
       throw new BadRequestException(
         'One or more menu items are invalid for this branch',
       );
+    }
+    for (const menuItem of menuItems) {
+      if (!menuItem.isActive) {
+        throw new BadRequestException(
+          `Item "${menuItem.name}" is OUT OF STOCK and cannot be ordered`,
+        );
+      }
     }
     const menuItemById = new Map(menuItems.map((m) => [m.id, m]));
     const taxMode = await this.getBranchTaxMode(branchId);
@@ -1017,8 +1032,10 @@ export class OrdersService {
         where: { id: dto.tableId, floor: { branchId } },
       });
       if (!target) throw new BadRequestException('Table not found');
-      if (target.status === 'OUT_OF_SERVICE') {
-        throw new BadRequestException('That table is out of service');
+      if (target.status !== 'AVAILABLE') {
+        throw new BadRequestException(
+          `Target table ${target.number} is not AVAILABLE (current: ${target.status})`,
+        );
       }
       const occupant = await this.prisma.order.findFirst({
         where: { tableId: target.id, status: 'OPEN', id: { not: orderId } },
