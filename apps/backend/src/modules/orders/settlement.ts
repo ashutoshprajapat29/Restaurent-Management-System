@@ -53,8 +53,8 @@ export function computeBill(input: BillInput): Bill {
       totals.totalAmount,
     ),
   );
-  const tipAmount = round2(input.tip ?? 0);
-  const deliveryFee = round2(input.deliveryFee ?? 0);
+  const tipAmount = Math.max(0, round2(input.tip ?? 0));
+  const deliveryFee = Math.max(0, round2(input.deliveryFee ?? 0));
   const taxAmount =
     totals.subtotal > 0
       ? round2(
@@ -198,7 +198,9 @@ export function settlePayments(args: {
     }
   }
 
-  const kept = lines.filter((l) => l.amount > 0);
+  const kept = lines.filter(
+    (l) => l.amount > 0 || (l.tendered ?? 0) > 0 || (l.changeGiven ?? 0) > 0,
+  );
   const paidNow = round2(
     kept.reduce((sum, l) => sum + l.amount, 0) + giftCardApplied,
   );
