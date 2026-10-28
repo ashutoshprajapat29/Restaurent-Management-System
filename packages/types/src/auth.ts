@@ -17,10 +17,16 @@ export const registerSchema = z.object({
 });
 export type RegisterDto = z.infer<typeof registerSchema>;
 
-export const pinLoginSchema = z.object({
-  userId: z.string(),
-  pin: z.string().min(4).max(8),
-});
+export const pinLoginSchema = z
+  .object({
+    pin: z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits"),
+    userId: z.string().optional(),
+    branchId: z.string().optional(),
+  })
+  .refine((data) => Boolean(data.userId || data.branchId), {
+    message: "branchId is required for terminal switch when userId is omitted",
+    path: ["branchId"],
+  });
 export type PinLoginDto = z.infer<typeof pinLoginSchema>;
 
 export const sessionUserSchema = z.object({

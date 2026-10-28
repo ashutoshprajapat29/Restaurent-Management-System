@@ -3,6 +3,7 @@ import { z } from "zod";
 export const tableStatusSchema = z.enum([
   "AVAILABLE",
   "OCCUPIED",
+  "BILLED",
   "RESERVED",
   "CLEANING",
   "OUT_OF_SERVICE",
@@ -55,3 +56,20 @@ export const tableLayoutUpdateSchema = z.object({
   rotation: z.number(),
 });
 export type TableLayoutUpdateDto = z.infer<typeof tableLayoutUpdateSchema>;
+
+export const transferOrderSchema = z.object({
+  orderId: z.string().min(1).optional(),
+  sourceTableId: z.string().min(1),
+  targetTableId: z.string().min(1),
+});
+export type TransferOrderDto = z.infer<typeof transferOrderSchema>;
+
+export const tableSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: tableStatusSchema,
+  activeOrderId: z.string().optional(),
+  statusSince: z.string().or(z.date()),
+});
+export type TableSummaryDto = z.infer<typeof tableSummarySchema>;
+

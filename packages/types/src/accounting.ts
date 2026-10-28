@@ -18,3 +18,15 @@ export const cashClosingSchema = z.object({
   note: z.string().max(300).optional(),
 });
 export type CashClosingDto = z.infer<typeof cashClosingSchema>;
+
+export interface CashClosingSummary {
+  businessDate: string;
+  openingFloat: number;
+  cashSales: number;
+  cashExpenses: number;
+  expectedCash: number;
+  countedCash: number;
+  variance: number;
+  tenderTotals: Record<string, number>;
+  totalSales?: number;
+}

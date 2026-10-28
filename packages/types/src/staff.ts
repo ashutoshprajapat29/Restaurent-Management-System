@@ -7,6 +7,7 @@ export const createStaffSchema = z.object({
   password: z.string().min(8),
   roleId: z.string().min(1),
   branchIds: z.array(z.string()).min(1),
+  pin: z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits").optional(),
 });
 export type CreateStaffDto = z.infer<typeof createStaffSchema>;
 
@@ -18,5 +19,6 @@ export const updateStaffSchema = z.object({
   isActive: z.boolean().optional(),
   branchIds: z.array(z.string()).optional(),
   password: z.string().min(8).optional(),
+  pin: z.string().regex(/^\d{4}$/, "PIN must be exactly 4 digits").optional(),
 });
 export type UpdateStaffDto = z.infer<typeof updateStaffSchema>;

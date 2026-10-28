@@ -13,6 +13,16 @@ export const restaurantSettingsSchema = z.object({
   // login screen once set. Square, ~256x256px+ PNG/SVG with a transparent
   // background reads best in that slot — see the settings page hint text.
   logoUrl: z.string().max(2048).optional().nullable(),
+  primaryColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Must be valid hex color e.g. #9F1239")
+    .optional()
+    .nullable(),
+  accentColor: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Must be valid hex color e.g. #FDF2F4")
+    .optional()
+    .nullable(),
   currency: z.string().optional(),
   timezone: z.string().optional(),
   // UPI id such as "name@okbank" (VPA format per NPCI: handle@psp).
