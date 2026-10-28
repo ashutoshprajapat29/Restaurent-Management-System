@@ -45,6 +45,7 @@ export class KotPrintService {
             table: true,
             customer: true,
             branch: true,
+            createdBy: { select: { id: true, name: true } },
           },
         },
         items: {
@@ -134,6 +135,8 @@ export class KotPrintService {
             : kot.order.guestName
               ? { name: kot.order.guestName }
               : null,
+          waiterName: kot.order.createdBy?.name ?? null,
+          waiterId: kot.order.createdBy?.id ?? null,
           notes: kot.order.notes,
           items: kot.items.map(({ orderItem }) => ({
             nameSnapshot: orderItem.nameSnapshot,

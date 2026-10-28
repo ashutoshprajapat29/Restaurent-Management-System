@@ -20,6 +20,7 @@ import { Auth } from '../../common/decorators/auth.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { BranchAccessService } from '../../common/services/branch-access.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { KdsService } from './kds.service';
 
 @ApiTags('kds')
@@ -28,6 +29,7 @@ export class KdsController {
   constructor(
     private readonly kdsService: KdsService,
     private readonly branchAccess: BranchAccessService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   @Auth('kds.manage')
@@ -36,6 +38,7 @@ export class KdsController {
     @CurrentUser() user: SessionUser,
     @Query('branchId') branchId: string,
   ) {
+    await this.subscriptionService.checkKdsAccess(user.restaurantId);
     await this.branchAccess.assertAccess(user.restaurantId, branchId);
     return this.kdsService.listStations(branchId);
   }
@@ -47,6 +50,7 @@ export class KdsController {
     @Query('branchId') branchId: string,
     @Query('stationId') stationId?: string,
   ) {
+    await this.subscriptionService.checkKdsAccess(user.restaurantId);
     await this.branchAccess.assertAccess(user.restaurantId, branchId);
     return this.kdsService.listActiveTickets(branchId, stationId);
   }

@@ -41,6 +41,7 @@ export class KdsService {
             notes: true,
             channel: true,
             customer: { select: { name: true, phone: true } },
+            createdBy: { select: { id: true, name: true } },
           },
         },
         items: { include: { orderItem: { include: { modifiers: true } } } },

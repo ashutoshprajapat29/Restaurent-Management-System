@@ -46,7 +46,7 @@ interface ReceiptOrder {
   orderNumber: string;
   type: string;
   createdAt: Date;
-  table: { label: string } | null;
+  table: { label?: string; name?: string } | null;
   customer: { name: string; phone: string | null } | null;
   subtotal: number;
   discountAmount: number;
@@ -83,6 +83,8 @@ export function buildReceiptHtml({
   branch,
   currency,
   order,
+  paperWidthMm = 80,
+  logoUrl,
 }: {
   restaurantName: string;
   branch: {
@@ -97,6 +99,8 @@ export function buildReceiptHtml({
   };
   currency: string;
   order: ReceiptOrder;
+  paperWidthMm?: 58 | 80;
+  logoUrl?: string | null;
 }): string {
   const sym = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
   const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
@@ -209,14 +213,14 @@ export function buildReceiptHtml({
 <style>
   * { box-sizing: border-box; }
   html { margin: 0; }
-  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 4mm; color: #111; width: 80mm; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 4mm; color: #111; width: ${paperWidthMm}mm; font-size: ${paperWidthMm === 58 ? '10px' : '12px'}; }
   p { margin: 0 0 3px; }
   .receipt { width: 100%; margin: 0; }
   h1 { font-size: 15px; text-align: center; margin: 0 0 2px; }
   .center { text-align: center; }
   .muted { color: #555; font-size: 11px; line-height: 1.35; }
   .rule { border: none; border-top: 1px dashed #999; margin: 5px 0; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: ${paperWidthMm === 58 ? '11px' : '12px'}; }
   th { text-align: left; font-size: 10px; text-transform: uppercase; color: #777; padding-bottom: 2px; }
   td { padding: 1px 0; vertical-align: top; word-break: break-word; }
   .num { text-align: right; white-space: nowrap; padding-left: 6px; }
@@ -226,9 +230,9 @@ export function buildReceiptHtml({
   .vf { text-align: center; font-size: 11px; }
   .vf svg { display: block; margin: 4px auto; }
   .footer { text-align: center; margin-top: 6px; font-size: 11px; }
-  @page { size: 80mm auto; margin: 0; }
+  @page { size: ${paperWidthMm}mm auto; margin: 0; }
   @media print {
-    html, body { width: 80mm; }
+    html, body { width: ${paperWidthMm}mm; }
     .no-print { display: none; }
   }
 </style>
@@ -238,6 +242,7 @@ export function buildReceiptHtml({
     window.addEventListener('message', function (e) { if (e.data === 'print') window.print(); });
   </script>
   <div class="receipt">
+    ${logoUrl ? `<div class="center"><img src="${esc(logoUrl)}" class="logo" style="max-height:48px;max-width:140px;margin-bottom:8px;" /></div>` : ''}
     <h1>${esc(restaurantName)}</h1>
     <p class="center muted">
       ${esc(branch.name)}${branch.address ? `<br>${esc(branch.address)}` : ''}
@@ -248,7 +253,7 @@ export function buildReceiptHtml({
     <p class="muted">
       ${esc(dateStr)}<br>
       Order: #${esc(order.orderNumber)} · ${esc(order.type.replace('_', ' '))}
-      ${order.table ? `<br>Table: ${esc(order.table.label)}` : ''}
+      ${order.table ? `<br>Table: ${esc(order.table.label ?? order.table.name)}` : ''}
       ${order.customer ? `<br>Guest: ${esc(order.customer.name)}${order.customer.phone ? ` · ${esc(order.customer.phone)}` : ''}` : ''}
     </p>
     <hr class="rule">

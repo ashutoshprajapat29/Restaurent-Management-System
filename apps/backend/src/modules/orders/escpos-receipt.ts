@@ -266,6 +266,8 @@ export interface EscposKotOrder {
   createdAt: Date;
   table: { label: string } | null;
   customer: { name: string } | null;
+  waiterName?: string | null;
+  waiterId?: string | null;
   /** Order-level note ("allergy: nuts"), printed above the items. */
   notes?: string | null;
   items: {
@@ -318,6 +320,7 @@ export function buildKotEscPosJob({
     `${order.type.replace('_', ' ')}${order.table ? ` - Table ${order.table.label}` : ''}`,
     { bold: true, size: 'tall' },
   );
+  if (order.waiterName) w.text(`Waiter: ${order.waiterName}`, { bold: true });
   if (order.customer) w.text(`Guest: ${order.customer.name}`);
   w.text(stamp(order.createdAt, { timeZone, locale }));
   if (order.notes) w.text(`ORDER NOTE: ${order.notes}`, { bold: true });
@@ -338,6 +341,11 @@ export function buildKotEscPosJob({
   }
   w.rule('=');
   w.text(`${order.items.length} line(s), ${units} item(s)`);
+  if (order.waiterName) {
+    w.text(
+      `Server: ${order.waiterName}${order.waiterId ? ` (ID: ${order.waiterId})` : ''}`,
+    );
+  }
   return {
     buffer: w.finish(),
     unsupportedChars: [...w.unsupported],
