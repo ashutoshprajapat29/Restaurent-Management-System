@@ -19,3 +19,5 @@ docker-compose.override.yml
 # own ./out directory; these are only produced by a local `dotnet build`.
 windows/msix/Launcher/bin/
 windows/msix/Launcher/obj/
+
+.agents/
