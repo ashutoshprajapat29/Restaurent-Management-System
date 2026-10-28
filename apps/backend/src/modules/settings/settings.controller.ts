@@ -26,6 +26,7 @@ import {
   assertValidImageSignature,
   imageUploadOptions,
 } from '../../common/upload/image-upload.config';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { SettingsService } from './settings.service';
 
 @ApiTags('settings')
@@ -34,7 +35,14 @@ export class SettingsController {
   constructor(
     private readonly settingsService: SettingsService,
     private readonly branchAccess: BranchAccessService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
+
+  @Auth()
+  @Get('subscription')
+  async getSubscription(@CurrentUser() user: SessionUser) {
+    return this.subscriptionService.getTenantSubscription(user.restaurantId);
+  }
 
   @Auth('settings.manage')
   @Get()
@@ -63,7 +71,11 @@ export class SettingsController {
   @Auth('settings.manage')
   @Post('restaurant/logo')
   @UseInterceptors(FileInterceptor('file', imageUploadOptions))
-  uploadRestaurantLogo(@UploadedFile() file?: Express.Multer.File) {
+  async uploadRestaurantLogo(
+    @CurrentUser() user: SessionUser,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    await this.subscriptionService.checkCustomBrandingAccess(user.restaurantId);
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }

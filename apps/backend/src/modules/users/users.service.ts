@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuditService } from '../../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 const SELECT = {
   id: true,
@@ -27,6 +28,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   list(restaurantId: string) {
@@ -45,6 +47,7 @@ export class UsersService {
   }
 
   async create(restaurantId: string, actorId: string, dto: CreateStaffDto) {
+    await this.subscriptionService.checkStaffQuota(restaurantId, 1);
     await this.assertRoleInRestaurant(restaurantId, dto.roleId);
     await this.assertBranchesInRestaurant(restaurantId, dto.branchIds);
 
@@ -60,6 +63,7 @@ export class UsersService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
+    const pinHash = dto.pin ? await bcrypt.hash(dto.pin, 12) : null;
     const user = await this.prisma.user.create({
       data: {
         restaurantId,
@@ -68,6 +72,7 @@ export class UsersService {
         phone: dto.phone,
         roleId: dto.roleId,
         passwordHash,
+        pinHash,
         branches: {
           create: dto.branchIds.map((branchId) => ({ branchId })),
         },
@@ -129,6 +134,9 @@ export class UsersService {
     const passwordHash = dto.password
       ? await bcrypt.hash(dto.password, 12)
       : undefined;
+    const pinHash = dto.pin
+      ? await bcrypt.hash(dto.pin, 12)
+      : undefined;
 
     const updated = await this.prisma.user.update({
       where: { id },
@@ -139,6 +147,7 @@ export class UsersService {
         roleId: dto.roleId,
         isActive: dto.isActive,
         passwordHash,
+        ...(pinHash !== undefined ? { pinHash } : {}),
         ...(dto.branchIds
           ? {
               branches: {
@@ -151,9 +160,9 @@ export class UsersService {
       select: SELECT,
     });
 
-    // Never log `dto.password`/`passwordHash` — only the fields it's safe
-    // for an owner reviewing history to see. `passwordChanged` is a boolean
-    // flag, not the value, so a password rotation is still visible in the
+    // Never log `dto.password`/`passwordHash`/`dto.pin`/`pinHash` — only the fields it's safe
+    // for an owner reviewing history to see. `passwordChanged` and `pinChanged` are boolean
+    // flags, not the value, so secret rotations are still visible in the
     // trail without the audit log becoming a secondary place secrets leak.
     await this.audit.record({
       userId: actorId,
@@ -168,6 +177,7 @@ export class UsersService {
         isActive: dto.isActive,
         branchIds: dto.branchIds,
         passwordChanged: Boolean(dto.password),
+        pinChanged: Boolean(dto.pin),
       },
     });
 

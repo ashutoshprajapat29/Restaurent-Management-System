@@ -43,6 +43,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { McpModule } from './mcp/mcp.module';
 import { SystemModule } from './system/system.module';
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { VerifactuModule } from './modules/verifactu/verifactu.module';
     SettingsModule,
     SyncModule,
     VerifactuModule,
+    SubscriptionModule,
     UsersModule,
     PermissionsModule,
     AuditModule,

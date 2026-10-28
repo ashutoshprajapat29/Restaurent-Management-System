@@ -154,26 +154,85 @@ export class AuthService {
   }
 
   async pinLogin(dto: PinLoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: dto.userId },
-      include: {
-        role: { include: { permissions: { include: { permission: true } } } },
-      },
-    });
+    let user: any = null;
 
-    if (!user || !user.isActive || !user.pinHash) {
-      throw new UnauthorizedException('PIN login not available for this user');
-    }
-    // A 4-8 digit PIN must not be a way around the second factor.
-    if (user.twoFactorEnabled) {
-      throw new UnauthorizedException(
-        'PIN login is off for accounts with two-factor authentication — sign in with your password',
-      );
-    }
+    if (dto.userId) {
+      user = await this.prisma.user.findUnique({
+        where: { id: dto.userId },
+        include: {
+          role: { include: { permissions: { include: { permission: true } } } },
+          branches: true,
+        },
+      });
 
-    const valid = await bcrypt.compare(dto.pin, user.pinHash);
-    if (!valid) {
-      throw new UnauthorizedException('Incorrect PIN');
+      if (!user || !user.isActive || !user.pinHash) {
+        throw new UnauthorizedException('PIN login not available for this user');
+      }
+      // A 4-digit PIN must not be a way around the second factor.
+      if (user.twoFactorEnabled) {
+        throw new UnauthorizedException(
+          'PIN login is off for accounts with two-factor authentication — sign in with your password',
+        );
+      }
+      if (user.branches && user.branches.length > 0) {
+        if (!dto.branchId) {
+          throw new UnauthorizedException(
+            'Branch ID is required for staff terminal PIN login',
+          );
+        }
+        if (
+          !user.branches.some(
+            (b: { branchId: string }) => b.branchId === dto.branchId,
+          )
+        ) {
+          throw new UnauthorizedException(
+            'Staff member is not assigned to this branch',
+          );
+        }
+      } else if (dto.branchId) {
+        throw new UnauthorizedException(
+          'Staff member is not assigned to this branch',
+        );
+      }
+
+      const valid = await bcrypt.compare(dto.pin, user.pinHash);
+      if (!valid) {
+        throw new UnauthorizedException('Incorrect PIN');
+      }
+    } else {
+      if (!dto.branchId) {
+        throw new BadRequestException(
+          'branchId is required for terminal switch when userId is omitted',
+        );
+      }
+      const candidates = await this.prisma.user.findMany({
+        where: {
+          isActive: true,
+          pinHash: { not: null },
+          twoFactorEnabled: false,
+          branches: {
+            some: { branchId: dto.branchId },
+          },
+        },
+        include: {
+          role: { include: { permissions: { include: { permission: true } } } },
+          branches: true,
+        },
+      });
+
+      for (const candidate of candidates) {
+        if (
+          candidate.pinHash &&
+          (await bcrypt.compare(dto.pin, candidate.pinHash))
+        ) {
+          user = candidate;
+          break;
+        }
+      }
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid PIN or inactive staff account');
+      }
     }
 
     return this.issueSession(user);

@@ -11,12 +11,14 @@ import {
 } from '@nodedr-restaurant/types';
 import { AuditService } from '../../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 @Injectable()
 export class SettingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   async get(restaurantId: string, branchId: string) {
@@ -37,6 +39,13 @@ export class SettingsService {
     userId: string,
     dto: RestaurantSettingsDto,
   ) {
+    if (
+      (dto.logoUrl !== undefined && dto.logoUrl !== null) ||
+      (dto.primaryColor !== undefined && dto.primaryColor !== null) ||
+      (dto.accentColor !== undefined && dto.accentColor !== null)
+    ) {
+      await this.subscriptionService.checkCustomBrandingAccess(restaurantId);
+    }
     const updated = await this.prisma.restaurant.update({
       where: { id: restaurantId },
       data: dto,
