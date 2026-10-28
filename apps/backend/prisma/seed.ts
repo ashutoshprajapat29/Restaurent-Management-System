@@ -43,11 +43,26 @@ async function main() {
   console.log('Creating demo restaurant + branch...');
   const restaurant = await prisma.restaurant.upsert({
     where: { id: 'demo-restaurant' },
-    update: {},
+    update: {
+      subscriptionPlan: 'PRO',
+      subscriptionStatus: 'ACTIVE',
+      maxTables: 100,
+      maxStaff: 50,
+      maxBranches: 5,
+      kdsEnabled: true,
+      customBrandingEnabled: true,
+    },
     create: {
       id: 'demo-restaurant',
       name: 'Nodedr Bistro (Demo)',
       currency: 'INR',
+      subscriptionPlan: 'PRO',
+      subscriptionStatus: 'ACTIVE',
+      maxTables: 100,
+      maxStaff: 50,
+      maxBranches: 5,
+      kdsEnabled: true,
+      customBrandingEnabled: true,
     },
   });
 

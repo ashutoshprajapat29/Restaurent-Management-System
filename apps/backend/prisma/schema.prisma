@@ -40,6 +40,20 @@ enum TaxMode {
   EXCLUSIVE
 }
 
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
 model Restaurant {
   id        String  @id @default(cuid())
   name      String
@@ -49,6 +63,8 @@ model Restaurant {
   // white-label self-hosted software, so the operator's brand should lead;
   // the product name stays as a small credit line instead (see BrandFooter).
   logoUrl   String?
+  primaryColor String?
+  accentColor  String?
   currency  String  @default("INR")
   timezone  String  @default("Asia/Kolkata")
 
@@ -64,6 +80,16 @@ model Restaurant {
   // many currency units of net spend earn 1 point (floor division).
   loyaltyPointValue      Decimal @default(1) @db.Decimal(6, 2)
   loyaltyEarnPerCurrency Int     @default(100)
+
+  // SaaS Subscription & Quotas
+  subscriptionPlan      SubscriptionPlan   @default(FREE)
+  subscriptionStatus    SubscriptionStatus @default(TRIALING)
+  maxTables             Int                @default(10)
+  maxStaff              Int                @default(3)
+  maxBranches           Int                @default(1)
+  trialEndsAt           DateTime?
+  kdsEnabled            Boolean            @default(false)
+  customBrandingEnabled Boolean            @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -465,6 +491,7 @@ model BackupConfig {
 enum TableStatus {
   AVAILABLE
   OCCUPIED
+  BILLED
   RESERVED
   CLEANING
   OUT_OF_SERVICE
