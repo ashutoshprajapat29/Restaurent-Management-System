@@ -289,7 +289,24 @@ describe('kitchen ticket job', () => {
       expect(l.length).toBeLessThanOrEqual(32),
     );
   });
+
+  it('prints waiter name in header and waiter server ID in footer when present', () => {
+    const { text } = readJob(
+      buildKotEscPosJob({
+        branchName: 'Casa',
+        order: {
+          ...kot,
+          waiterName: 'Carlos Gomez',
+          waiterId: 'usr-456',
+        },
+        ...fmt,
+      }).buffer,
+    );
+    expect(text).toContain('Waiter: Carlos Gomez');
+    expect(text).toContain('Server: Carlos Gomez (ID: usr-456)');
+  });
 });
+
 
 describe('VERI*FACTU QR on the receipt', () => {
   const verifactu = {

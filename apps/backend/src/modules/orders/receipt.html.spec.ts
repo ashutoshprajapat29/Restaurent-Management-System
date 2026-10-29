@@ -69,3 +69,35 @@ describe('receipt HTML with VERI*FACTU', () => {
     ).not.toContain('QR tributario');
   });
 });
+
+describe('dual thermal width layout', () => {
+  it('applies 58mm page width when requested', () => {
+    const html58 = buildReceiptHtml({ ...base, paperWidthMm: 58 });
+    expect(html58).toContain('width: 58mm');
+    expect(html58).toContain('size: 58mm auto');
+  });
+
+  it('defaults to 80mm page width', () => {
+    const html80 = buildReceiptHtml(base);
+    expect(html80).toContain('width: 80mm');
+    expect(html80).toContain('size: 80mm auto');
+  });
+});
+
+describe('receipt HTML branding and logo rendering', () => {
+  it('renders logo image tag when logoUrl is provided', () => {
+    const html = buildReceiptHtml({
+      ...base,
+      logoUrl: 'https://example.com/logo.png',
+    });
+    expect(html).toContain('<img src="https://example.com/logo.png" class="logo"');
+  });
+
+  it('omits logo image tag when logoUrl is null or not provided', () => {
+    const html = buildReceiptHtml(base);
+    expect(html).not.toContain('<img src=');
+    expect(html).not.toContain('class="logo"');
+  });
+});
+
+
