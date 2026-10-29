@@ -130,6 +130,11 @@ export function CheckoutPanel({
     );
   const [completed, setCompleted] = useState<CheckoutResult | null>(null);
   const { data: settings } = useSettings(branchId);
+  const currency = settings?.restaurant.currency ?? "INR";
+  const taxMode = settings?.branch.taxMode ?? "INCLUSIVE";
+  const taxRegime = settings?.branch.taxRegime ?? "INDIA_GST";
+  const taxLabel = settings?.branch.taxLabel ?? null;
+  const money = (val: number | string) => formatCurrency(val, currency);
 
   // What the guest has typed in, as numbers. Once a payment has been taken the
   // server locks the figures, so these stop mattering (and are not sent).
@@ -259,11 +264,11 @@ export function CheckoutPanel({
           if (result.settlement.fullyPaid) {
             setCompleted(result);
             publishDisplay({ kind: "paid", total: Number(result.totalAmount), method });
-            playPaymentReceived(formatCurrency(result.totalAmount));
+            playPaymentReceived(money(result.totalAmount));
             toast.success("Payment recorded");
           } else {
             toast.success(
-              `Part payment of ${formatCurrency(result.settlement.amountPaid)} recorded — ${formatCurrency(result.settlement.balanceDue)} still due`,
+              `Part payment of ${money(result.settlement.amountPaid)} recorded — ${money(result.settlement.balanceDue)} still due`,
             );
           }
         },
@@ -294,11 +299,11 @@ export function CheckoutPanel({
           Order #{order.orderNumber} paid
         </p>
         <p className="text-2xl font-semibold tabular-nums text-foreground">
-          {formatCurrency(completed.totalAmount)}
+          {money(completed.totalAmount)}
         </p>
         {settlement.changeDue > 0 && (
           <p className="rounded-lg bg-success/10 px-4 py-2 text-lg font-semibold tabular-nums text-success">
-            Change due {formatCurrency(settlement.changeDue)}
+            Change due {money(settlement.changeDue)}
           </p>
         )}
         {Number(completed.loyaltyDiscountAmount) > 0 && (
@@ -354,7 +359,7 @@ export function CheckoutPanel({
 
   const kitchen = live ? kitchenProgress(live.kots.map((k) => k.status)) : null;
   const paidSoFar = live?.payments ?? [];
-  const partialLabel = `Record partial payment · ${formatCurrency(plan.applied)}`;
+  const partialLabel = `Record partial payment · ${money(plan.applied)}`;
 
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto">
@@ -449,7 +454,7 @@ export function CheckoutPanel({
             {paidSoFar.map((p) => (
               <li key={p.id} className="flex justify-between tabular-nums">
                 <span>{p.method}</span>
-                <span>{formatCurrency(p.amount)}</span>
+                <span>{money(p.amount)}</span>
               </li>
             ))}
           </ul>
@@ -567,8 +572,8 @@ export function CheckoutPanel({
             </Button>
           </div>
           {giftCardBalance !== null && (
-            <p className="text-xs text-success">
-              Balance {formatCurrency(giftCardBalance)} — applying {formatCurrency(giftCardApplied)}
+            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+              Balance {money(giftCardBalance)} — applying {money(giftCardApplied)}
             </p>
           )}
         </div>
@@ -605,18 +610,18 @@ export function CheckoutPanel({
                 onChange={(e) => setAmountText(e.target.value)}
               />
               {plan.valid && plan.change > 0 && (
-                <p className="rounded-lg bg-success/10 px-3 py-2 text-base font-semibold tabular-nums text-success" role="status">
-                  Change due {formatCurrency(plan.change)}
+                <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-base font-semibold tabular-nums text-emerald-800 dark:text-emerald-300" role="status">
+                  Change due {money(plan.change)}
                 </p>
               )}
               {plan.valid && plan.partial && (
-                <p className="rounded-lg bg-warning/10 px-3 py-2 text-sm text-warning" role="status">
-                  Part payment — {formatCurrency(plan.balanceAfter)} will stay due and the table stays open.
+                <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-900 dark:text-amber-200" role="status">
+                  Part payment — {money(plan.balanceAfter)} will stay due and the table stays open.
                 </p>
               )}
               {plan.clamped && (
                 <p className="text-xs text-muted-foreground" role="status">
-                  {method} can only pay the balance ({formatCurrency(remainingDue)}); only that will be charged.
+                  {method} can only pay the balance ({money(remainingDue)}); only that will be charged.
                 </p>
               )}
             </div>
@@ -628,7 +633,7 @@ export function CheckoutPanel({
                 <>
                   <QRCodeSVG value={upiUri} size={176} level="M" marginSize={1} />
                   <p className="text-xs font-medium text-[#17251d]">
-                    Scan with any UPI app · {formatCurrency(upiAmount)} pre-filled
+                    Scan with any UPI app · {money(upiAmount)} pre-filled
                   </p>
                   <p className="text-[11px] text-neutral-500">Also shown on the customer display</p>
                 </>
@@ -658,7 +663,7 @@ export function CheckoutPanel({
           </div>
           {split > 1 && bill && (
             <p className="-mt-2 text-center text-xs text-muted-foreground">
-              {formatCurrency(round2(balance / split))} each — enter each guest&apos;s share as a part
+              {money(round2(balance / split))} each — enter each guest&apos;s share as a part
               payment, or collect separately and complete payment once for the whole table.
             </p>
           )}
@@ -666,7 +671,15 @@ export function CheckoutPanel({
       )}
 
       <div className="mt-auto flex flex-col gap-3 border-t border-border pt-4">
-        <BillSummary bill={bill} giftCardApplied={giftCardApplied} pending={repricing || billQuery.isFetching} />
+        <BillSummary
+          bill={bill}
+          giftCardApplied={giftCardApplied}
+          pending={repricing || billQuery.isFetching}
+          currency={currency}
+          taxMode={taxMode}
+          taxRegime={taxRegime}
+          taxLabel={taxLabel}
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -703,7 +716,7 @@ export function CheckoutPanel({
             : plan.partial
               ? partialLabel
               : plan.change > 0
-                ? `Complete payment · change ${formatCurrency(plan.change)}`
+                ? `Complete payment · change ${money(plan.change)}`
                 : "Complete payment"}
         </Button>
       </div>
@@ -716,10 +729,18 @@ function BillSummary({
   bill,
   giftCardApplied,
   pending,
+  currency = "INR",
+  taxMode = "INCLUSIVE",
+  taxRegime = "INDIA_GST",
+  taxLabel,
 }: {
   bill: BillPreview | undefined;
   giftCardApplied: number;
   pending: boolean;
+  currency?: string;
+  taxMode?: string;
+  taxRegime?: string;
+  taxLabel?: string | null;
 }) {
   if (!bill) {
     return <p className="text-sm text-muted-foreground">Pricing the bill…</p>;
@@ -731,42 +752,86 @@ function BillSummary({
       : bill.discountType === "FIXED"
         ? "flat discount"
         : null;
+
+  const isExclusive = taxMode === "EXCLUSIVE";
+  const subtotalDisplay = isExclusive
+    ? round2(bill.subtotal - bill.taxAmount)
+    : bill.subtotal;
+
+  const resolvedLabel = taxLabel?.trim() || (taxRegime === "INDIA_GST" ? "GST" : "Tax");
+  const isIgst = taxRegime === "INDIA_GST" && taxLabel?.trim().toUpperCase() === "IGST";
+
   return (
     <div className={pending ? "opacity-70" : undefined} aria-busy={pending}>
       <dl className="flex flex-col gap-1 text-sm">
-        <Row label="Subtotal" value={formatCurrency(bill.subtotal)} />
+        <Row
+          label={isExclusive ? "Subtotal (excl. tax)" : "Subtotal"}
+          value={formatCurrency(subtotalDisplay, currency)}
+        />
         {bill.discountAmount > 0 && (
           <Row
             label={`Discount${source ? ` (${source})` : ""}`}
-            value={`− ${discountSummary(bill.discountPercent, bill.discountAmount, formatCurrency)}`}
+            value={`− ${discountSummary(bill.discountPercent, bill.discountAmount, (v) => formatCurrency(v, currency))}`}
             accent
           />
         )}
-        <Row label="Tax (included)" value={formatCurrency(bill.taxAmount)} muted />
+        {isExclusive ? (
+          <Row
+            label={resolvedLabel}
+            value={`+ ${formatCurrency(bill.taxAmount, currency)}`}
+          />
+        ) : taxRegime === "INDIA_GST" && !isIgst ? (
+          <>
+            <Row
+              label="CGST (incl.)"
+              value={formatCurrency(round2(bill.taxAmount / 2), currency)}
+              muted
+            />
+            <Row
+              label="SGST (incl.)"
+              value={formatCurrency(round2(bill.taxAmount - round2(bill.taxAmount / 2)), currency)}
+              muted
+            />
+          </>
+        ) : (
+          <Row
+            label={`${resolvedLabel} (incl.)`}
+            value={formatCurrency(bill.taxAmount, currency)}
+            muted
+          />
+        )}
         {bill.loyaltyDiscountAmount > 0 && (
           <Row
             label={`Loyalty (${bill.loyaltyPointsRedeemed} pts)`}
-            value={`− ${formatCurrency(bill.loyaltyDiscountAmount)}`}
+            value={`− ${formatCurrency(bill.loyaltyDiscountAmount, currency)}`}
             accent
           />
         )}
-        {bill.tipAmount > 0 && <Row label="Tip" value={formatCurrency(bill.tipAmount)} />}
-        {bill.deliveryFee > 0 && <Row label="Delivery fee" value={formatCurrency(bill.deliveryFee)} />}
+        {bill.tipAmount > 0 && (
+          <Row label="Tip" value={formatCurrency(bill.tipAmount, currency)} />
+        )}
+        {bill.deliveryFee > 0 && (
+          <Row label="Delivery fee" value={formatCurrency(bill.deliveryFee, currency)} />
+        )}
       </dl>
       <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
         <span className="text-sm font-medium text-foreground">Total due</span>
-        <span className="text-lg font-semibold tabular-nums text-foreground">{formatCurrency(bill.totalDue)}</span>
+        <span className="text-lg font-semibold tabular-nums text-foreground">
+          {formatCurrency(bill.totalDue, currency)}
+        </span>
       </div>
       {bill.amountPaid > 0 && (
         <dl className="mt-1 flex flex-col gap-1 text-sm">
-          <Row label="Paid so far" value={formatCurrency(bill.amountPaid)} />
+          <Row label="Paid so far" value={formatCurrency(bill.amountPaid, currency)} />
         </dl>
       )}
-      {giftCardApplied > 0 && <Row label="Gift card" value={`− ${formatCurrency(giftCardApplied)}`} accent />}
+      {giftCardApplied > 0 && (
+        <Row label="Gift card" value={`− ${formatCurrency(giftCardApplied, currency)}`} accent />
+      )}
       <div className="mt-1 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Balance due</span>
         <span className="text-base font-semibold tabular-nums text-foreground">
-          {formatCurrency(Math.max(round2(bill.balanceDue - giftCardApplied), 0))}
+          {formatCurrency(Math.max(round2(bill.balanceDue - giftCardApplied), 0), currency)}
         </span>
       </div>
     </div>

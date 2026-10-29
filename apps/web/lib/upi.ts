@@ -7,6 +7,8 @@ export function buildUpiUri(opts: {
   note?: string;
   ref?: string;
 }): string {
+  if (!opts.vpa || !opts.vpa.includes("@")) throw new Error("Invalid UPI VPA");
+  if (opts.amount < 0) throw new Error("Invalid amount");
   const q = new URLSearchParams();
   q.set("pa", opts.vpa);
   if (opts.name) q.set("pn", opts.name.slice(0, 60));
