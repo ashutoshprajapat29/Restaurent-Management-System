@@ -32,6 +32,7 @@ export function AddStaffDialog() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
   const [roleId, setRoleId] = useState("");
   const { branches } = useBranch();
   const [branchIds, setBranchIds] = useState<string[]>([]);
@@ -44,6 +45,7 @@ export function AddStaffDialog() {
     setEmail("");
     setPhone("");
     setPassword("");
+    setPin("");
     setRoleId("");
     setBranchIds([]);
   };
@@ -62,6 +64,10 @@ export function AddStaffDialog() {
       toast.error("Select at least one branch");
       return;
     }
+    if (pin && !/^\d{4}$/.test(pin)) {
+      toast.error("PIN must be exactly 4 digits");
+      return;
+    }
     createStaff.mutate(
       {
         name,
@@ -70,6 +76,7 @@ export function AddStaffDialog() {
         password,
         roleId,
         branchIds,
+        pin: pin || undefined,
       },
       {
         onSuccess: () => {
@@ -85,7 +92,7 @@ export function AddStaffDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm">Add staff</Button>} />
+      <DialogTrigger render={<Button className="min-h-[44px]">Add staff</Button>} />
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
@@ -112,12 +119,29 @@ export function AddStaffDialog() {
             <Label htmlFor="s-password">Password</Label>
             <PasswordInput
               id="s-password"
-              
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
               required
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="s-pin">4-Digit Terminal PIN (Optional)</Label>
+            <Input
+              id="s-pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="e.g. 1234"
+              className="tracking-widest"
+            />
+            <p className="text-xs text-muted-foreground">
+              Used for quick staff switching on shared POS terminals without signing out.
+            </p>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -152,7 +176,7 @@ export function AddStaffDialog() {
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={createStaff.isPending}>
+            <Button type="submit" disabled={createStaff.isPending} className="min-h-[44px]">
               {createStaff.isPending ? "Adding…" : "Add staff"}
             </Button>
           </DialogFooter>

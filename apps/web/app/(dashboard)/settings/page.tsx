@@ -174,6 +174,8 @@ function GeneralSettingsForm({
   const [name, setName] = useState(restaurant.name);
   const [legalName, setLegalName] = useState(restaurant.legalName ?? "");
   const [logoUrl, setLogoUrl] = useState<string | null>(restaurant.logoUrl);
+  const [primaryColor, setPrimaryColor] = useState(restaurant.primaryColor ?? "#9F1239");
+  const [accentColor, setAccentColor] = useState(restaurant.accentColor ?? "#FDF2F4");
   const [currency, setCurrency] = useState(restaurant.currency);
   const [timezone, setTimezone] = useState(restaurant.timezone);
   const [upiVpa, setUpiVpa] = useState(restaurant.upiVpa ?? "");
@@ -207,6 +209,8 @@ function GeneralSettingsForm({
         name,
         legalName: legalName || undefined,
         logoUrl,
+        primaryColor: primaryColor || null,
+        accentColor: accentColor || null,
         currency,
         timezone,
         upiVpa: upiVpa.trim() || null,
@@ -341,6 +345,57 @@ function GeneralSettingsForm({
             <div className="flex flex-col gap-2">
               <Label htmlFor="r-timezone">Timezone</Label>
               <Input id="r-timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} required />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 border-t border-border pt-4">
+            <h3 className="text-sm font-medium text-foreground">Theme & Brand Colors</h3>
+            <p className="text-xs text-muted-foreground">
+              Customize primary brand and accent colors across the POS and application shell.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="r-primary-color">Primary Color</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  id="r-primary-picker"
+                  aria-label="Pick primary color"
+                  value={primaryColor || "#9F1239"}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer rounded border border-border p-1 bg-background"
+                />
+                <Input
+                  id="r-primary-color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  placeholder="#9F1239"
+                  maxLength={7}
+                  className="font-mono uppercase min-h-[44px]"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="r-accent-color">Accent Color</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  id="r-accent-picker"
+                  aria-label="Pick accent color"
+                  value={accentColor || "#FDF2F4"}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="h-10 w-10 min-h-[44px] min-w-[44px] cursor-pointer rounded border border-border p-1 bg-background"
+                />
+                <Input
+                  id="r-accent-color"
+                  value={accentColor}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  placeholder="#FDF2F4"
+                  maxLength={7}
+                  className="font-mono uppercase min-h-[44px]"
+                />
+              </div>
             </div>
           </div>
 
