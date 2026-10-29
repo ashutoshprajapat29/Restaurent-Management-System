@@ -75,7 +75,7 @@ export function MergeTableDialog({
                 <Button
                   key={t.id}
                   variant="outline"
-                  className="justify-between"
+                  className="min-h-11 min-h-[48px] justify-between p-3"
                   disabled={merge.isPending}
                   onClick={() => handleMerge(t.id)}
                 >

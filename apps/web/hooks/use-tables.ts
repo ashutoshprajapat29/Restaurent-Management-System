@@ -6,6 +6,7 @@ import type {
   TableLayoutUpdateDto,
   TableStatusDto,
   TableUpdateDto,
+  TransferOrderDto,
 } from "@nodedr-restaurant/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -119,3 +120,17 @@ export function useRotateQrToken(branchId: string | null) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["floors", branchId] }),
   });
 }
+
+export function useTransferTableOrder(branchId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: TransferOrderDto) =>
+      api.post(`/tables/transfer?branchId=${branchId}`, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["floors", branchId] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+

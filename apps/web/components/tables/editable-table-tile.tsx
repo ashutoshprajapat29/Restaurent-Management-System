@@ -83,7 +83,7 @@ export function EditableTableTile({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       className={cn(
-        "absolute flex cursor-grab touch-none flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 text-xs font-medium text-foreground shadow-sm active:cursor-grabbing",
+        "absolute flex min-h-[44px] min-w-[44px] cursor-grab touch-none flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 text-xs font-medium text-foreground shadow-sm active:cursor-grabbing",
       )}
       style={{ left: posX, top: posY, width: table.width, height: table.height }}
     >
@@ -93,25 +93,27 @@ export function EditableTableTile({
         <Users className="h-3 w-3" />
         {table.capacity}
       </span>
-      <div className="absolute -top-3 right-1 flex gap-1">
+      <div className="absolute -top-4 -right-4 flex gap-2">
         <Button
           variant="secondary"
           size="icon"
-          className="h-6 w-6 shadow"
+          className="min-h-11 min-w-11 h-11 w-11 shadow"
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
           }}
+          aria-label="Edit table"
         >
-          <Pencil className="h-3 w-3" />
+          <Pencil className="h-4 w-4" />
         </Button>
         <Button
           variant="secondary"
           size="icon"
-          className="h-6 w-6 text-destructive shadow"
+          className="min-h-11 min-w-11 h-11 w-11 text-destructive shadow"
           onClick={handleDelete}
+          aria-label="Delete table"
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
     </div>

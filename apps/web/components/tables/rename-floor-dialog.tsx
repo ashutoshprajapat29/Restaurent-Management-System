@@ -54,8 +54,8 @@ export function RenameFloorDialog({
     >
       <DialogTrigger
         render={
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Pencil className="h-3 w-3" />
+          <Button variant="ghost" size="icon" className="min-h-11 min-w-11 h-11 w-11" aria-label="Rename floor">
+            <Pencil className="h-4 w-4" />
           </Button>
         }
       />

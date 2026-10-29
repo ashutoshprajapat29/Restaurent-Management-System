@@ -69,8 +69,11 @@ export default function TablesPage() {
   const contentWidth = activeFloor
     ? Math.max(1, ...activeFloor.tables.map((t) => t.posX + t.width + 16))
     : canvasWidth;
+  const minTileScale = 44 / 80; // Minimum clamp so 80px tiles never scale below 44px on 375px mobile viewports
   const fitScale =
-    !editMode && availableWidth > 0 && availableWidth < contentWidth ? availableWidth / contentWidth : 1;
+    !editMode && availableWidth > 0 && availableWidth < contentWidth
+      ? Math.max(minTileScale, availableWidth / contentWidth)
+      : 1;
 
   const openAddTable = () => {
     setEditorTable(null);
@@ -117,7 +120,7 @@ export default function TablesPage() {
       ) : floors && floors.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
           <div className="flex flex-col gap-4">
-            <div className="flex min-w-0 flex-wrap items-center gap-2 [&_button]:max-sm:min-h-10">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 [&_button]:max-sm:min-h-11">
               {(floors.length > 1 || editMode) && (
                 <ResponsiveTabs
                   className="max-lg:w-full"
@@ -148,7 +151,7 @@ export default function TablesPage() {
                 className="relative"
                 style={
                   fitScale < 1
-                    ? { width: availableWidth, height: (canvasHeight - 40) * fitScale + 24 }
+                    ? { width: Math.max(availableWidth, contentWidth * fitScale), height: (canvasHeight - 40) * fitScale + 24 }
                     : { width: canvasWidth, height: canvasHeight, minWidth: "100%" }
                 }
               >
@@ -189,10 +192,11 @@ export default function TablesPage() {
             </Card>
 
             <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-              <Legend color="bg-success" label="Available" />
-              <Legend color="bg-primary" label="Occupied" />
-              <Legend color="bg-warning" label="Reserved" />
-              <Legend color="bg-muted-foreground" label="Cleaning / out of service" />
+              <Legend color="bg-emerald-500" label="Vacant" />
+              <Legend color="bg-amber-500" label="Cooking" />
+              <Legend color="bg-blue-500" label="Billed" />
+              <Legend color="bg-yellow-500" label="Reserved" />
+              <Legend color="bg-muted-foreground" label="Cleaning / Out of service" />
             </div>
           </div>
 
