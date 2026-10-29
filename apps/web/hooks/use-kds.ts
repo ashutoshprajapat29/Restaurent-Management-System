@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
+import { io } from "socket.io-client";
 import { KOT_NEXT_STATUS, type KotStatusDto } from "@nodedr-restaurant/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { resolveWsUrl } from "@/lib/ws-url";
 
 export interface KotTicket {
   id: string;
@@ -23,6 +26,7 @@ export interface KotTicket {
     table: { number: string; name: string | null } | null;
     guestName: string | null;
     customer: { name: string | null; phone: string | null } | null;
+    createdBy?: { id: string; name: string } | null;
   };
   items: {
     id: string;
@@ -46,6 +50,21 @@ export function useKdsStations(branchId: string | null) {
 
 /** stationId "" = every station (the default, and what this screen always did). */
 export function useKdsTickets(branchId: string | null, stationId = "", enabled = true) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!branchId || !enabled) return;
+    const socket = io(resolveWsUrl(), { query: { branchId }, withCredentials: true });
+    const invalidate = () => {
+      queryClient.invalidateQueries({ queryKey: ["kds", "tickets"] });
+    };
+    socket.on("kot.created", invalidate);
+    socket.on("kot.updated", invalidate);
+    return () => {
+      socket.disconnect();
+    };
+  }, [branchId, enabled, queryClient]);
+
   return useQuery({
     queryKey: ["kds", "tickets", branchId, stationId],
     queryFn: () =>

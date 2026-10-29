@@ -73,6 +73,7 @@ export function TicketCard({ ticket, branchId }: { ticket: KotTicket; branchId: 
 
   return (
     <Card
+      data-testid={`kds-ticket-${ticket.id}`}
       className={cn(
         "flex shrink-0 flex-col gap-3 p-4",
         (isLate || ticket.isPriority) && "border-warning/50 ring-1 ring-warning/30",
@@ -113,7 +114,10 @@ export function TicketCard({ ticket, branchId }: { ticket: KotTicket; branchId: 
         title="View customer details"
       >
         <div>
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <p
+            data-testid={`kds-ticket-ordernum-${ticket.id}`}
+            className="flex items-center gap-1.5 text-sm font-semibold text-foreground"
+          >
             #{ticket.order.orderNumber}
             {ticket.isPriority && <Star className="h-3.5 w-3.5 fill-warning text-warning" />}
             {ticket.order.channel === "ONLINE" && (
@@ -125,6 +129,12 @@ export function TicketCard({ ticket, branchId }: { ticket: KotTicket; branchId: 
             {ticket.station && ` · ${ticket.station.name}`}
             {customerDisplayName(ticket.order) && ` · ${customerDisplayName(ticket.order)}`}
           </p>
+          <span
+            data-testid={`kds-ticket-waiter-${ticket.id}`}
+            className="mt-1 inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[11px] font-medium text-secondary-foreground"
+          >
+            Waiter: {ticket.order.createdBy?.name || "Staff"}
+          </span>
         </div>
         <div
           className={cn(

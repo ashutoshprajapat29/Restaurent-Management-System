@@ -38,8 +38,14 @@ export function billQueryString(adj: BillQuery = {}): string {
 }
 
 /** Browser print of the bill (open order) or receipt (paid order). Read-only. */
-export function openReceiptPrint(orderId: string, branchId: string, adj: BillQuery = {}) {
+export function openReceiptPrint(
+  orderId: string,
+  branchId: string,
+  adj: BillQuery = {},
+  paperWidthMm: 58 | 80 = 80,
+) {
   const frame = getPrintFrame();
+  frame.style.width = paperWidthMm === 58 ? "260px" : "380px";
   frame.onload = () => {
     const win = frame.contentWindow;
     if (!win) return;
@@ -51,11 +57,16 @@ export function openReceiptPrint(orderId: string, branchId: string, adj: BillQue
     }
   };
   // Force a reload even if printing the same order twice in a row.
-  frame.src = `/api/v1/orders/${orderId}/receipt?branchId=${branchId}${billQueryString(adj)}&t=${Date.now()}`;
+  frame.src = `/api/v1/orders/${orderId}/receipt?branchId=${branchId}${billQueryString(adj)}&width=${paperWidthMm}&t=${Date.now()}`;
 }
 
-export function openKotPrint(orderId: string, branchId: string) {
+export function openKotPrint(
+  orderId: string,
+  branchId: string,
+  paperWidthMm: 58 | 80 = 80,
+) {
   const frame = getPrintFrame();
+  frame.style.width = paperWidthMm === 58 ? "260px" : "380px";
   frame.onload = () => {
     const win = frame.contentWindow;
     if (!win) return;
@@ -66,5 +77,5 @@ export function openKotPrint(orderId: string, branchId: string) {
       win.postMessage("print", "*");
     }
   };
-  frame.src = `/api/v1/orders/${orderId}/kot?branchId=${branchId}&t=${Date.now()}`;
+  frame.src = `/api/v1/orders/${orderId}/kot?branchId=${branchId}&width=${paperWidthMm}&t=${Date.now()}`;
 }
