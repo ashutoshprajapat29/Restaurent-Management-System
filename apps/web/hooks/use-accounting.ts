@@ -17,6 +17,8 @@ export interface ClosingPreview {
   cashSales: number;
   cashExpenses: number;
   expectedCash: number;
+  tenderTotals?: Record<string, number>;
+  totalSales?: number;
 }
 export interface ClosingRow {
   id: string;

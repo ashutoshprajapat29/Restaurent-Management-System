@@ -109,7 +109,7 @@ function Expenses({ branchId }: { branchId: string | null }) {
                 </span>
                 <span className="flex items-center gap-3">
                   {formatCurrency(e.amount)}
-                  <Button size="sm" variant="outline" onClick={() => deleteExpense.mutate(e.id, { onError: (err) => toast.error(errMsg(err)) })}>
+                  <Button size="sm" variant="outline" className="min-h-[44px] min-w-[64px]" onClick={() => deleteExpense.mutate(e.id, { onError: (err) => toast.error(errMsg(err)) })}>
                     Delete
                   </Button>
                 </span>
@@ -146,24 +146,41 @@ function CashClose({ branchId }: { branchId: string | null }) {
           <Input className="w-40" inputMode="decimal" placeholder="Opening float" value={floor} onChange={(e) => setFloor(e.target.value)} />
         </div>
         {preview && (
-          <div>
-            <Row label="Opening float" value={formatCurrency(preview.openingFloat)} />
-            <Row label="Cash sales (net of cash refunds)" value={formatCurrency(preview.cashSales)} />
-            <Row label="Cash expenses" value={`− ${formatCurrency(preview.cashExpenses)}`} />
-            <Row strong label="Expected in till" value={formatCurrency(preview.expectedCash)} />
+          <div className="flex flex-col gap-3">
+            <div>
+              <Row label="Opening float" value={formatCurrency(preview.openingFloat)} />
+              <Row label="Cash sales (net of cash refunds)" value={formatCurrency(preview.cashSales)} />
+              <Row label="Cash expenses" value={`− ${formatCurrency(preview.cashExpenses)}`} />
+              <Row strong label="Expected in till" value={formatCurrency(preview.expectedCash)} />
+            </div>
+
+            {preview.tenderTotals && Object.keys(preview.tenderTotals).length > 0 && (
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Sales by Payment Tender (Z-Report)
+                </p>
+                {Object.entries(preview.tenderTotals).map(([method, amount]) => (
+                  <Row key={method} label={method} value={formatCurrency(amount)} />
+                ))}
+                {preview.totalSales !== undefined && (
+                  <Row strong label="Gross Total Sales" value={formatCurrency(preview.totalSales)} />
+                )}
+              </div>
+            )}
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3">
           <Input className="w-40" inputMode="decimal" placeholder="Counted cash" value={counted} onChange={(e) => setCounted(e.target.value)} />
           {variance != null && (
-            <span className={cn("text-sm", variance === 0 ? "text-success" : "text-destructive")}>
+            <span className={cn("text-sm", variance === 0 ? "text-emerald-700 font-medium dark:text-emerald-400" : "text-destructive")}>
               {variance === 0 ? "Balanced" : `${variance > 0 ? "Over" : "Short"} by ${formatCurrency(Math.abs(variance))}`}
             </span>
           )}
         </div>
         <Input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-        <div>
+        <div className="flex items-center gap-3">
           <Button
+            className="min-h-[44px]"
             disabled={counted === "" || closeDay.isPending}
             onClick={() =>
               closeDay.mutate(
@@ -173,6 +190,14 @@ function CashClose({ branchId }: { branchId: string | null }) {
             }
           >
             Close day
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-[44px]"
+            onClick={() => window.print()}
+          >
+            Print Z-Report
           </Button>
         </div>
       </Card>
