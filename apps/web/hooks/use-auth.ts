@@ -45,6 +45,19 @@ export function useLogout() {
   });
 }
 
+export function useQuickSwitch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: { pin: string; branchId?: string; userId?: string }) =>
+      api.post<{ user: SessionUser }>("/auth/pin-login", dto),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["auth", "me"], data);
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["tables"] });
+    },
+  });
+}
+
 export function hasPermission(user: SessionUser | undefined, permission: string): boolean {
   return user ? permissionSatisfied(user.permissions, permission) : false;
 }

@@ -5,6 +5,8 @@ import type {
   RestaurantSettingsDto,
   TaxMode,
   TaxRegime,
+  TenantSubscriptionDto,
+  UpdateSubscriptionDto,
 } from "@nodedr-restaurant/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -14,6 +16,8 @@ export interface RestaurantSettings {
   name: string;
   legalName: string | null;
   logoUrl: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
   currency: string;
   timezone: string;
   upiVpa: string | null;
@@ -86,5 +90,21 @@ export function useSetKiosk(branchId: string | null) {
     mutationFn: (action: "enable" | "rotate" | "disable") =>
       api.post<{ kioskToken: string | null }>(`/settings/kiosk/${action}?branchId=${branchId}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", branchId] }),
+  });
+}
+
+export function useSubscription() {
+  return useQuery({
+    queryKey: ["subscription"],
+    queryFn: () => api.get<TenantSubscriptionDto>("/subscription"),
+  });
+}
+
+export function useUpdateSubscription() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: UpdateSubscriptionDto) =>
+      api.patch<TenantSubscriptionDto>("/subscription", dto),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subscription"] }),
   });
 }

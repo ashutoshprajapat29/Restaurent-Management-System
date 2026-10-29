@@ -2,7 +2,7 @@
 
 import type { SessionUser } from "@nodedr-restaurant/types";
 import { Menu } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { EntityDialogHost } from "@/components/layout/entity-dialog-host";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -13,6 +13,7 @@ import { BranchSwitcher } from "./branch-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { Logo } from "./logo";
 import { MobileBottomNav } from "./mobile-bottom-nav";
+import { PinSwitchDialog } from "./pin-switch-dialog";
 import { SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 
@@ -53,6 +54,20 @@ function RestaurantBrand() {
   );
 }
 
+function getAccessibleForeground(hexColor: string): string {
+  let clean = hexColor.replace("#", "").trim();
+  if (clean.length === 3) {
+    clean = clean.split("").map((c) => c + c).join("");
+  }
+  if (clean.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(clean)) return "#FFFFFF";
+  const r = parseInt(clean.substring(0, 2), 16) / 255;
+  const g = parseInt(clean.substring(2, 4), 16) / 255;
+  const b = parseInt(clean.substring(4, 6), 16) / 255;
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const lum = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return lum > 0.2 ? "#111827" : "#FFFFFF";
+}
+
 export function AppShell({
   user,
   children,
@@ -61,6 +76,25 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { branchId } = useBranch();
+  const { data: settingsData } = useSettings(branchId);
+  const restaurant = settingsData?.restaurant;
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (restaurant?.primaryColor) {
+      root.style.setProperty("--primary", restaurant.primaryColor);
+      root.style.setProperty("--sidebar-primary", restaurant.primaryColor);
+      root.style.setProperty("--ring", restaurant.primaryColor);
+      const fg = getAccessibleForeground(restaurant.primaryColor);
+      root.style.setProperty("--primary-foreground", fg);
+      root.style.setProperty("--sidebar-primary-foreground", fg);
+    }
+    if (restaurant?.accentColor) {
+      root.style.setProperty("--accent", restaurant.accentColor);
+    }
+  }, [restaurant?.primaryColor, restaurant?.accentColor]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -100,13 +134,14 @@ export function AppShell({
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary lg:hidden"
+            className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary lg:hidden"
             aria-label="Open navigation"
           >
             <Menu className="h-5 w-5" />
           </button>
           <div className="hidden lg:block" />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <PinSwitchDialog />
             <LanguageSwitcher compact />
             <NotificationBell />
             <UserMenu user={user} />
