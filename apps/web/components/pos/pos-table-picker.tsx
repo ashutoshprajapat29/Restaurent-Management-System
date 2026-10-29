@@ -12,16 +12,18 @@ import type { Floor, RestaurantTable } from "@/hooks/use-tables";
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLES: Record<TableStatusDto, string> = {
-  AVAILABLE: "bg-success/10 border-success/30 text-success hover:bg-success/15",
-  OCCUPIED: "bg-primary/10 border-primary/30 text-primary hover:bg-primary/15",
-  RESERVED: "bg-warning/10 border-warning/30 text-warning hover:bg-warning/15",
-  CLEANING: "bg-muted border-border text-muted-foreground",
+  AVAILABLE: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/15",
+  OCCUPIED: "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-400 hover:bg-amber-500/15",
+  BILLED: "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/15",
+  RESERVED: "bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/15",
+  CLEANING: "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400",
   OUT_OF_SERVICE: "bg-muted border-border text-muted-foreground opacity-50",
 };
 
 const STATUS_LABEL: Record<TableStatusDto, string> = {
-  AVAILABLE: "Available",
-  OCCUPIED: "Occupied — tap to add items or bill",
+  AVAILABLE: "Vacant — tap to seat or order",
+  OCCUPIED: "Cooking — active order in preparation",
+  BILLED: "Billed — awaiting settlement",
   RESERVED: "Reserved",
   CLEANING: "Cleaning",
   OUT_OF_SERVICE: "Out of service",
@@ -109,10 +111,28 @@ export function PosTablePicker({
                 <Users className="h-3 w-3" />
                 {table.capacity}
               </span>
-              <span className="hidden rounded-full bg-background/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide lg:inline">
-                {table.status === "OUT_OF_SERVICE" ? "Out of service" : table.status.toLowerCase()}
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                  table.status === "AVAILABLE" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+                  table.status === "OCCUPIED" && "bg-amber-500/20 text-amber-800 dark:text-amber-300",
+                  table.status === "BILLED" && "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+                  table.status === "RESERVED" && "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
+                  table.status === "CLEANING" && "bg-purple-500/20 text-purple-700 dark:text-purple-300",
+                  table.status === "OUT_OF_SERVICE" && "bg-muted text-muted-foreground",
+                )}
+              >
+                {table.status === "AVAILABLE"
+                  ? "Vacant"
+                  : table.status === "OCCUPIED"
+                    ? "Cooking"
+                    : table.status === "BILLED"
+                      ? "Billed"
+                      : table.status === "OUT_OF_SERVICE"
+                        ? "Out of service"
+                        : table.status.toLowerCase()}
               </span>
-              {(table.status === "OCCUPIED" || table.status === "RESERVED") && (
+              {(table.status === "OCCUPIED" || table.status === "BILLED" || table.status === "RESERVED") && (
                 <ElapsedTimer since={table.statusSince} className="flex items-center gap-1 text-[10px] opacity-70" />
               )}
             </button>
@@ -126,10 +146,11 @@ export function PosTablePicker({
       </div>
 
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground lg:border-t lg:border-border lg:pt-3">
-        <Legend color="bg-success" label="Available" />
-        <Legend color="bg-primary" label="Occupied" />
-        <Legend color="bg-warning" label="Reserved" />
-        <Legend color="bg-muted-foreground" label="Cleaning / out of service" />
+        <Legend color="bg-emerald-500" label="Vacant" />
+        <Legend color="bg-amber-500" label="Cooking" />
+        <Legend color="bg-blue-500" label="Billed" />
+        <Legend color="bg-yellow-500" label="Reserved" />
+        <Legend color="bg-muted-foreground" label="Cleaning / Out of service" />
       </div>
     </div>
   );

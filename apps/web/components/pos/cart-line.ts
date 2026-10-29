@@ -7,6 +7,7 @@ export interface CartLine {
   modifierIds: string[];
   modifierLabel?: string;
   portion?: Portion;
+  kitchenNote?: string;
 }
 
 export type PortionKind = "HALF" | "FULL" | "CUSTOM";
@@ -25,7 +26,13 @@ export function portionText(p?: Portion): string {
   return p.customLabel || "Custom";
 }
 
-export function cartLineKey(menuItemId: string, modifierIds: string[], portion?: Portion): string {
+export function cartLineKey(
+  menuItemId: string,
+  modifierIds: string[],
+  portion?: Portion,
+  kitchenNote?: string,
+): string {
   const p = portion ? `${portion.kind}:${portion.customLabel ?? ""}:${portion.customPrice ?? ""}` : "";
-  return `${menuItemId}::${[...modifierIds].sort().join(",")}::${p}`;
+  const note = kitchenNote ? `::note:${kitchenNote}` : "";
+  return `${menuItemId}::${[...modifierIds].sort().join(",")}::${p}${note}`;
 }

@@ -12,6 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CartLine } from "@/components/pos/cart-line";
+import { useBranch } from "@/hooks/use-branch";
+import { useSettings } from "@/hooks/use-settings";
 import type { RestaurantTable } from "@/hooks/use-tables";
 import { formatCurrency } from "@/lib/format";
 import { subtotalOf } from "@/lib/pricing-preview";
@@ -33,6 +35,8 @@ export function CartPanel({
   onIncrement,
   onDecrement,
   onRemove,
+  onUpdateNote,
+  outOfStockItemNames = [],
   onSubmit,
   isSubmitting,
   existingOrderNumber,
@@ -55,6 +59,8 @@ export function CartPanel({
   onIncrement: (key: string) => void;
   onDecrement: (key: string) => void;
   onRemove: (key: string) => void;
+  onUpdateNote?: (key: string, note: string) => void;
+  outOfStockItemNames?: string[];
   onSubmit: () => void;
   isSubmitting: boolean;
   existingOrderNumber?: string;
@@ -70,17 +76,27 @@ export function CartPanel({
   scheduledFor: string;
   onScheduledForChange: (v: string) => void;
 }) {
+  const { branchId } = useBranch();
+  const { data: settingsData } = useSettings(branchId);
+  const currency = settingsData?.restaurant.currency ?? "INR";
+  const taxMode = settingsData?.branch.taxMode ?? "INCLUSIVE";
   const subtotal = subtotalOf(lines.map((l) => l.unitPrice * l.quantity));
   const deliveryReady =
     orderType !== "DELIVERY" ||
     (delivery.address.trim().length >= 5 && delivery.pincode.trim().length >= 3 && delivery.phone.trim().length >= 6);
+  const hasOutOfStock = outOfStockItemNames.length > 0;
   const canSubmit =
-    lines.length > 0 && (orderType !== "DINE_IN" || !!tableId) && deliveryReady && !isSubmitting && !checkingTable;
+    lines.length > 0 &&
+    !hasOutOfStock &&
+    (orderType !== "DINE_IN" || !!tableId) &&
+    deliveryReady &&
+    !isSubmitting &&
+    !checkingTable;
 
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div data-testid="cart-panel" className="flex h-full flex-col gap-4">
       <Tabs value={orderType} onValueChange={(v) => onOrderTypeChange(v as PosOrderType)}>
-        <TabsList className="w-full">
+        <TabsList className="w-full h-11">
           <TabsTrigger value="DINE_IN" className="flex-1">
             Dine-in
           </TabsTrigger>
@@ -163,7 +179,7 @@ export function CartPanel({
               type="button"
               size="sm"
               variant={b.id === selectedBillId ? "default" : "outline"}
-              className="h-7 px-2 text-xs"
+              className="min-h-[44px] min-w-[44px] px-3 text-xs"
               aria-pressed={b.id === selectedBillId}
               onClick={() => onSelectBill?.(b.id)}
             >
@@ -184,12 +200,21 @@ export function CartPanel({
               type="button"
               variant="outline"
               size="sm"
-              className="h-7 shrink-0 px-2 text-xs"
+              className="min-h-[44px] shrink-0 px-3 text-xs"
               onClick={onViewExistingOrder}
             >
               View & pay
             </Button>
           )}
+        </div>
+      )}
+
+      {hasOutOfStock && (
+        <div
+          data-testid="cart-stock-alert"
+          className="rounded-lg bg-destructive/15 border border-destructive/30 px-3 py-2 text-xs text-destructive font-medium"
+        >
+          Warning: Out of stock item(s) in cart: {outOfStockItemNames.join(", ")}
         </div>
       )}
 
@@ -202,42 +227,68 @@ export function CartPanel({
         ) : (
           <div className="flex flex-col divide-y divide-border">
             {lines.map((line) => (
-              <div key={line.key} className="flex items-start justify-between gap-3 py-3">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{line.name}</p>
-                  {line.modifierLabel && (
-                    <p className="text-xs text-muted-foreground">{line.modifierLabel}</p>
-                  )}
-                  <p className="mt-1 text-sm font-medium tabular-nums text-foreground">
-                    {formatCurrency(line.unitPrice * line.quantity)}
-                  </p>
+              <div
+                key={line.key}
+                data-testid={`cart-line-${line.key}`}
+                className="flex flex-col gap-2 py-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{line.name}</p>
+                    {line.modifierLabel && (
+                      <p className="text-xs text-muted-foreground">{line.modifierLabel}</p>
+                    )}
+                    <p className="mt-1 text-sm font-medium tabular-nums text-foreground">
+                      {formatCurrency(line.unitPrice * line.quantity, currency)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="min-h-[44px] min-w-[44px] h-11 w-11"
+                      data-testid={`cart-line-dec-${line.key}`}
+                      onClick={() => onDecrement(line.key)}
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span
+                      data-testid={`cart-line-qty-${line.key}`}
+                      className="w-7 text-center text-sm font-medium tabular-nums"
+                    >
+                      {line.quantity}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="min-h-[44px] min-w-[44px] h-11 w-11"
+                      data-testid={`cart-line-inc-${line.key}`}
+                      onClick={() => onIncrement(line.key)}
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="min-h-[44px] min-w-[44px] h-11 w-11 text-muted-foreground hover:text-destructive"
+                      data-testid={`cart-line-remove-${line.key}`}
+                      onClick={() => onRemove(line.key)}
+                      aria-label="Remove line"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => onDecrement(line.key)}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="w-5 text-center text-sm tabular-nums">{line.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => onIncrement(line.key)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => onRemove(line.key)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Kitchen note (e.g. no onion, extra spicy)…"
+                    value={line.kitchenNote ?? ""}
+                    onChange={(e) => onUpdateNote?.(line.key, e.target.value)}
+                    className="h-9 text-xs"
+                    data-testid={`cart-line-note-input-${line.key}`}
+                  />
                 </div>
               </div>
             ))}
@@ -247,12 +298,19 @@ export function CartPanel({
 
       <div className="flex flex-col gap-3 border-t border-border pt-4">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal (incl. tax)</span>
-          <span className="font-semibold tabular-nums text-foreground">
-            {formatCurrency(subtotal)}
+          <span className="text-muted-foreground">
+            {taxMode === "EXCLUSIVE" ? "Subtotal (excl. tax)" : "Subtotal (incl. tax)"}
+          </span>
+          <span data-testid="cart-subtotal" className="font-semibold tabular-nums text-foreground">
+            {formatCurrency(subtotal, currency)}
           </span>
         </div>
-        <Button className="h-11" disabled={!canSubmit} onClick={onSubmit}>
+        <Button
+          data-testid="cart-submit-btn"
+          className="h-11"
+          disabled={!canSubmit}
+          onClick={onSubmit}
+        >
           {isSubmitting
             ? "Sending to kitchen…"
             : existingOrderNumber

@@ -178,7 +178,7 @@ function ModifierPickerBody({
           </div>
         )}
         {groups.map((group) => (
-          <div key={group.id} className="flex flex-col gap-2">
+          <div key={group.id} data-testid={`modifier-group-${group.id}`} className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-foreground">{group.name}</h3>
               <span className="text-xs text-muted-foreground">
@@ -192,18 +192,21 @@ function ModifierPickerBody({
                   <button
                     key={mod.id}
                     type="button"
+                    data-testid={`modifier-option-${mod.id}`}
                     onClick={() => toggle(group.id, mod.id, group.maxSelect)}
                     className={cn(
-                      "flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors",
+                      "flex min-h-[44px] items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors",
                       isSelected
                         ? "border-primary bg-accent text-accent-foreground"
                         : "border-border hover:bg-secondary",
                     )}
                   >
                     <span>{mod.name}</span>
-                    {Number(mod.priceAdjustment) > 0 && (
+                    {Number(mod.priceAdjustment) !== 0 && (
                       <span className="text-xs text-muted-foreground">
-                        +{formatCurrency(mod.priceAdjustment)}
+                        {Number(mod.priceAdjustment) > 0
+                          ? `+${formatCurrency(mod.priceAdjustment)}`
+                          : `-${formatCurrency(Math.abs(Number(mod.priceAdjustment)))}`}
                       </span>
                     )}
                   </button>
@@ -215,7 +218,13 @@ function ModifierPickerBody({
       </div>
 
       <DialogFooter>
-        <Button onClick={handleConfirm}>Add to cart</Button>
+        <Button
+          data-testid="modifier-confirm-btn"
+          className="h-11 min-h-[44px] w-full"
+          onClick={handleConfirm}
+        >
+          Add to cart
+        </Button>
       </DialogFooter>
     </>
   );
@@ -236,7 +245,7 @@ export function ModifierPickerDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent data-testid="modifier-dialog" className="sm:max-w-md">
         {item && (
           <ModifierPickerBody
             key={item.id}

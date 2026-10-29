@@ -292,6 +292,31 @@ export function useMergeOrder(branchId: string | null) {
   });
 }
 
+export function useTransferOrder(branchId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      sourceTableId,
+      targetTableId,
+    }: {
+      orderId?: string;
+      sourceTableId: string;
+      targetTableId: string;
+    }) =>
+      api.post(`/tables/transfer?branchId=${branchId}`, {
+        orderId,
+        sourceTableId,
+        targetTableId,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["floors", branchId] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
 // Everything a changed bill can touch on screen: lists, the table map, the
 // kitchen screen, dashboard figures.
 function invalidateBillViews(queryClient: ReturnType<typeof useQueryClient>, branchId: string | null) {

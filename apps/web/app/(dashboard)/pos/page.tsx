@@ -16,7 +16,7 @@ import { PosTablePicker } from "@/components/pos/pos-table-picker";
 import { ProductGrid } from "@/components/pos/product-grid";
 import { Card } from "@/components/ui/card";
 import { useBranch } from "@/hooks/use-branch";
-import type { MenuItem } from "@/hooks/use-menu";
+import { useMenuItems, type MenuItem } from "@/hooks/use-menu";
 import {
   useAddOrderItems,
   useCreateOrder,
@@ -40,6 +40,7 @@ export default function PosPage() {
 function PosPageInner() {
   const { branchId, isLoading: branchLoading } = useBranch();
   const { note, clear: clearNote, toast } = useNoteToast();
+  const { data: menuItems } = useMenuItems(branchId);
   const floorsQuery = useFloors(branchId);
   const floors = floorsQuery.data;
   const tables = floors?.flatMap((f) => f.tables) ?? [];
@@ -47,6 +48,22 @@ function PosPageInner() {
 
   const [lines, setLines] = useState<CartLine[]>([]);
   const [orderType, setOrderType] = useState<PosOrderType>("DINE_IN");
+
+  const validateCartStock = () => {
+    if (!menuItems) return { valid: true, outOfStockItemNames: [] as string[] };
+    const itemMap = new Map(menuItems.map((m) => [m.id, m]));
+    const outOfStockItemNames: string[] = [];
+    for (const l of lines) {
+      const m = itemMap.get(l.menuItemId);
+      if (m && !m.isActive && !outOfStockItemNames.includes(m.name)) {
+        outOfStockItemNames.push(m.name);
+      }
+    }
+    return {
+      valid: outOfStockItemNames.length === 0,
+      outOfStockItemNames,
+    };
+  };
   const [delivery, setDelivery] = useState<DeliveryDetails>({ address: "", pincode: "", phone: "" });
   const [scheduledFor, setScheduledFor] = useState("");
   const [tableId, setTableIdRaw] = useState(preselectedTableId);
@@ -126,6 +143,10 @@ function PosPageInner() {
   };
 
   const handleSelect = (item: MenuItem) => {
+    if (!item.isActive) {
+      toast.error(`Item "${item.name}" is OUT OF STOCK and cannot be ordered`);
+      return;
+    }
     if (item.modifierGroups.length > 0 || item.halfPrice != null) {
       setPickerItem(item);
       return;
@@ -162,15 +183,27 @@ function PosPageInner() {
     );
   };
 
+  const updateLineNote = (key: string, note: string) => {
+    setLines((prev) =>
+      prev.map((l) => (l.key === key ? { ...l, kitchenNote: note } : l)),
+    );
+  };
+
   const removeLine = (key: string) => setLines((prev) => prev.filter((l) => l.key !== key));
 
   const handleSubmit = () => {
     if (checkingTable) return;
+    const stockCheck = validateCartStock();
+    if (!stockCheck.valid) {
+      toast.error(`Cannot order out of stock item(s): ${stockCheck.outOfStockItemNames.join(", ")}`);
+      return;
+    }
     const sentTableId = tableId;
     const items = lines.map((l) => ({
       menuItemId: l.menuItemId,
       quantity: l.quantity,
       modifierIds: l.modifierIds,
+      kitchenNote: l.kitchenNote,
       ...(l.portion
         ? {
             portion: l.portion.kind,
@@ -321,6 +354,8 @@ function PosPageInner() {
                 onIncrement={(key) => updateQuantity(key, 1)}
                 onDecrement={(key) => updateQuantity(key, -1)}
                 onRemove={removeLine}
+                onUpdateNote={updateLineNote}
+                outOfStockItemNames={validateCartStock().outOfStockItemNames}
                 onSubmit={handleSubmit}
                 isSubmitting={createOrder.isPending || addOrderItems.isPending}
                 existingOrderNumber={existingOrder?.orderNumber}
