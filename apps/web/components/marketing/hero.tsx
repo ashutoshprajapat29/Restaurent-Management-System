@@ -61,7 +61,7 @@ export function Hero() {
           transition={{ duration: 0.4, delay: 0.48, ease: [0.22, 1, 0.36, 1] }}
           className="mt-9 flex flex-col items-center gap-3 sm:flex-row"
         >
-          <Button size="lg" className="h-11 px-6 text-[15px]" render={<Link href="/signup" />}>
+          <Button size="lg" className="h-11 px-6 text-[15px]" nativeButton={false} render={<Link href="/signup" />}>
             Get started free
             <ArrowRight className="size-4" data-icon="inline-end" />
           </Button>
@@ -69,6 +69,7 @@ export function Hero() {
             variant="outline"
             size="lg"
             className="h-11 px-6 text-[15px]"
+            nativeButton={false}
             render={<a href={downloadHref("github")} />}
           >
             <Github className="size-4" data-icon="inline-start" />
